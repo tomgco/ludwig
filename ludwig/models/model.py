@@ -1339,18 +1339,21 @@ class Model:
 
     def save_savedmodel(self, save_path):
 
+        # https://github.com/uber/ludwig/blob/master/ludwig/api.py#L524
         input_tensors = {}
         for input_feature in self.hyperparameters['input_features']:
-            input_tensors[input_feature['name']] = getattr(
-                self, input_feature['name']
-            )
+            input_tensors[input_feature['name']] = getattr(self, input_feature['name'])
 
         output_tensors = {}
         for output_feature in self.hyperparameters['output_features']:
-            output_tensors[output_feature['name']] = getattr(
-                self,
-                output_feature['name']
-            )
+            output_tensors[output_feature['name']] = getattr(self, output_feature['name'])
+
+        # https://github.com/uber/ludwig/blob/0404cf21ec42c4802dbbc928c5df78318181298b/ludwig/models/model.py#L921
+        # we need to collect these output tensors and they have different name from `getattr(model, output_feature['name'])`
+        output_nodes = self.get_output_nodes(collect_predictions=True, only_predictions=True)
+
+        for output_feature in output_nodes:
+            output_tensors[output_feature] = output_nodes[output_feature]['predictions']
 
         session = self.initialize_session()
 
